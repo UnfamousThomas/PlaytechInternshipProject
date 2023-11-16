@@ -25,6 +25,10 @@ public class BettingSystem {
         }
     }
 
+    /**
+     * Method to load matches into memory. Reads through the match_data.txt file and loads matches.
+     * @throws FileNotFoundException If the match_data.txt filer was not found
+     */
     public void readMatches() throws FileNotFoundException {
         File matchFile = new File("match_data.txt");
         Scanner matchScanner = new Scanner(matchFile);
@@ -36,6 +40,10 @@ public class BettingSystem {
         }
     }
 
+    /**
+     * Method to call for each line of player_data.txt. Handles choosing method as well as saving first illegal action.
+     * @param line Line currently handling
+     */
     public void handlePlayer(String line) {
         String[] parts = line.split(",");
         UUID playerId = UUID.fromString(parts[0]);
@@ -59,9 +67,13 @@ public class BettingSystem {
         players.put(playerId, player);
     }
 
+    /**
+     * Simple utility method to change player_data.txt format into result.txt format
+     * @param input Line we are editing
+     * @return The correct format line
+     */
     private String modifyIllegal(String input) {
         input = input.replaceAll("(,,)", ",null,");
-
         if (input.endsWith(",")) {
             input += "null";
         }
