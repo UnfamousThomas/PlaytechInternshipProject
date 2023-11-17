@@ -22,7 +22,13 @@ public class Main {
         bettingSystem.writeToFile("result.txt");
     }
 
-    private static void readMatches(String filename, BettingSystem bs) throws FileNotFoundException {
+    /**
+     * Utility method that handles loading matches from file to memory
+     * @param filename Where to read files from
+     * @param bs BettingSystem instance we are loading into
+     * @throws FileNotFoundException If something went wrong with reading the file
+     */
+    private static void readMatches(String filename, BettingSystem bs) throws IOException {
         File matchFile = new File(filename);
         Scanner matchScanner = new Scanner(matchFile);
         while (matchScanner.hasNextLine()) {
@@ -33,8 +39,14 @@ public class Main {
         }
     }
 
+    /**
+     * Utility method that handles loading and doing player actions from file
+     * @param filename Where player actions are stored
+     * @param bs BettingSystem instance we are using
+     * @throws IOException If something went wrong with reading the file
+     */
     private static void readPlayerAction(String filename, BettingSystem bs) throws IOException{
-        File playerFile = new File("player_data.txt");
+        File playerFile = new File(filename);
         Scanner playerScanner = new Scanner(playerFile);
         while (playerScanner.hasNextLine()) {
             String line = playerScanner.nextLine();
