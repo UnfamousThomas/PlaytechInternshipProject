@@ -64,7 +64,7 @@ public class BettingSystem {
             input += "null";
         }
 
-        return input;
+        return input.replaceAll(","," ");
     }
 
     /**
