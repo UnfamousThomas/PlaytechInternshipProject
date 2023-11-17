@@ -3,6 +3,7 @@ package me.unfamousthomas.logic;
 import me.unfamousthomas.dataobjects.Match;
 import me.unfamousthomas.dataobjects.MatchResult;
 import me.unfamousthomas.dataobjects.Player;
+import me.unfamousthomas.exceptions.OperationReadingException;
 
 import java.io.*;
 import java.util.*;
@@ -18,27 +19,12 @@ public class BettingSystem {
         this.players = new HashMap<>();
         this.firstIllegal = new HashMap<>();
         this.casinoBalanceChange = 0;
-        try {
-            readMatches();
-        } catch (FileNotFoundException e) {
-            System.out.println("Something went wrong reading matches!");
-        }
     }
 
-    /**
-     * Method to load matches into memory. Reads through the match_data.txt file and loads matches.
-     * @throws FileNotFoundException If the match_data.txt filer was not found
-     */
-    public void readMatches() throws FileNotFoundException {
-        File matchFile = new File("match_data.txt");
-        Scanner matchScanner = new Scanner(matchFile);
-        while (matchScanner.hasNextLine()) {
-            String line = matchScanner.nextLine();
-            String[] parts = line.split(",");
-            Match match = new Match(UUID.fromString(parts[0]), determineResultFromString(parts[3]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]));
-            matches.put(match.getUuid(), match);
-        }
+    public void addMatch(Match match) {
+        matches.put(match.getUuid(), match);
     }
+
 
     /**
      * Method to call for each line of player_data.txt. Handles choosing method as well as saving first illegal action.
@@ -59,7 +45,7 @@ public class BettingSystem {
                 player.withdraw(Long.parseLong(parts[3]));
                 break;
             default:
-                throw new RuntimeException("Something went wrong with reading player operation");
+                throw new OperationReadingException(line);
         }
         if (player.isIllegal() && !firstIllegal.containsKey(playerId)) {
             firstIllegal.put(playerId, modifyIllegal(line));
@@ -107,7 +93,7 @@ public class BettingSystem {
      * @param result The string to use as input, should be the last part of the match data file
      * @return MatchResult or RuntimeException
      */
-    private MatchResult determineResultFromString(String result) {
+    public MatchResult determineResultFromString(String result) {
         char winner = result.toUpperCase().charAt(0);
         return switch (winner) {
             case 'A' -> MatchResult.A_WIN;
@@ -117,19 +103,30 @@ public class BettingSystem {
         };
     }
 
-    /**
-     * Method to call when we have looked through all the files and done the logic.
-     * Makes the file
-     *
-     * @throws IOException Exception thrown when something went wrong with manipulating the file
-     */
-    public void finishLogic() throws IOException {
-        File file = new File("result.txt");
-        file.createNewFile();
-        BufferedWriter bw = new BufferedWriter(new FileWriter(file));
 
-        for (Map.Entry<UUID, Player> entry : players.entrySet()) {
-            Player player = entry.getValue();
+    /**
+     * Method to write the processed data into a file.
+     * Internally calls {@link #writeIllegalActions(BufferedWriter)} and {@link #writePlayerData(BufferedWriter)}
+     * @param filename Filename to write data to. Usually "results.txt"
+     */
+    public void writeToFile(String filename) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filename))) {
+            writePlayerData(bw);
+            writeIllegalActions(bw);
+            bw.newLine();
+            bw.write(String.valueOf(casinoBalanceChange));
+        } catch (IOException e) {
+            System.out.println("Something went wrong!");
+        }
+    }
+
+    /**
+     * Utility method that handles writing the player balances into the file
+     * @param bw bufferedwriter that was opened in {@link #writeToFile(String)}
+     * @throws IOException If something went wrong with writing to file
+     */
+    private void writePlayerData(BufferedWriter bw) throws IOException {
+        for (Player player : players.values()) {
             if (!player.isIllegal()) {
                 bw.write(player.toString());
                 bw.newLine();
@@ -138,15 +135,19 @@ public class BettingSystem {
             }
         }
         bw.newLine();
+    }
 
-        for (Map.Entry<UUID, String> entry : firstIllegal.entrySet()) {
-            bw.write(entry.getValue());
+    /**
+     * Utility method that handles writing the illegal actions into the file
+     * @param bw bufferedwriter that was opened in {@link #writeToFile(String)} ()}
+     * @throws IOException If something went wrong with writing to file
+     */
+
+    private void writeIllegalActions(BufferedWriter bw) throws IOException {
+        for (String illegalAction : firstIllegal.values()) {
+            bw.write(illegalAction);
             bw.newLine();
         }
-        bw.newLine();
-        bw.write(String.valueOf(casinoBalanceChange));
-        bw.close();
-
     }
 }
 
